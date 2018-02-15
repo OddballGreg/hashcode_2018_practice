@@ -2,12 +2,42 @@
 
 require 'pry'
 
+class Validator
+  def initialize(rules)
+
+  end
+
+  def validate(piece)
+
+  end
+end
+
+class Node
+  attr_accessor :decision, :parent, :own_score, :score_total, :slice_tally, :weight
+
+  def initialize(decision, parent) #{piece: {x: 1, y, 1}, placement: {x: 1, y: 1}}
+    @decision = decision
+    @parent = parent
+    @own_score = decision[:x] * decision[:y] #number of segements in decision
+    @score_total = @parent.score_tally + @own_score
+    @slice_tally = @parent.slice_tally + 1
+    @weight = @score_total / slice_tally
+  end
+
+  def explore
+    result = []
+
+    return results
+  end
+end
+
 class Info
   def initialize
     @rows = @columns = @min_ingredients = @max_slice_size = @tomato_count = @mushroom_count = @size = 0
+    @pieces = []
   end
 
-  attr_accessor :rows, :columns, :min_ingredients, :max_slice_size, :tomato_count, :mushroom_count, :map, :size
+  attr_accessor :rows, :columns, :min_ingredients, :max_slice_size, :tomato_count, :mushroom_count, :map, :size, :pieces
 end
 
 if ARGV[0].empty? || !File.exists?(ARGV[0])
@@ -45,13 +75,8 @@ end
 
 info.size = info.rows * info.columns
 
-# puts info.inspect
-# info.map.each do |l|
-#   puts l.inspect
-# end
-
 puts "#{info.min_ingredients} T & #{info.min_ingredients} M"
-puts "min_ingredients = #{info.min_ingredients * 2}"
+puts "min_ingredients per ingredient = #{info.min_ingredients * 2}"
 
 puts "max_slice_size = #{info.max_slice_size}"
 
@@ -64,5 +89,24 @@ puts "max possible slices per lowest ingredient =  #{[info.tomato_count , info.m
 puts "Average segements per slice = #{info.size / ([info.tomato_count , info.mushroom_count].min.to_f / info.min_ingredients.to_f)}"
 
 def divisors_of(num)
-    (1..num).select { |n|num % n == 0}.map{|divisor| [divisor, (num/divisor)]}
+  (1..num).select{|n|num % n == 0}
 end
+
+divisors = divisors_of(info.max_slice_size)
+
+divisors.each do |divisor_x|
+  divisors.each do |divisor_y|
+    next if divisor_x * divisor_y > info.max_slice_size
+    next if divisor_x * divisor_y < (info.min_ingredients * 2)
+    next if divisor_x > info.columns
+    next if divisor_y > info.rows
+    info.pieces << {x: divisor_x, y: divisor_y}
+  end
+end
+
+puts info.pieces
+
+open_set = {}
+closed_set = []
+
+
