@@ -13,60 +13,61 @@ class Validator
 end
 
 class Node
-  attr_accessor :decision, :parent, :own_score, :score_total, :slice_tally, :weight, :map
+  attr_accessor :decision, :parent, :own_score, :score_total, :slice_tally, :weight, :map, :info
 
-  def initialize(decision, parent, map) #{piece: {x: 1, y, 1}, placement: {x: 1, y: 1}}
+  def initialize(decision, parent, map, info) #{piece: {x: 1, y, 1}, placement: {x: 1, y: 1}}
     @decision = decision
     @parent = parent
-    @own_score = decision[:x] * decision[:y] #number of segements in decision
-    @score_total = @parent.score_tally + @own_score
-    @slice_tally = @parent.slice_tally + 1
-    @weight = @score_total / slice_tally
+    @own_score = decision[:piece][:x] * decision[:piece][:y] #number of segements in decision
+    @score_total = (@parent.score_total rescue 0) + @own_score
+    @slice_tally = (@parent.slice_tally rescue 0) + 1
+    @weight = @score_total / @slice_tally
     @map = map.map{|x| x.clone}
+    @info = info
   end
 
   def self.explore(pieces, initial_map, info)
     results = []
-    postion_x = 0
-    postion_y = 0
 
+    position_x = 0
+    position_y = 0
     pieces.each do |piece|
-      piece_found = false
-      while(postion_x < info.columns) do
-        next if piece_found
-        while(postion_y < info.rows) do
-          next if piece_found
-          tomato_count = 0
-          mushroom_count = 0
-
-          piece_index_x = 0
-          piece_index_y = 0
-
-          while piece_index_x < piece[:x]
-            while piece_index_y < piece[:y]
-              spot = map[position_x + piece_index_x][postion_y + piece_index_y]
-
-              next if position_x + piece_index_x > info.columns
-              next if postion_y + piece_index_y > info.rows
-              tomato_count += 1 if spot == 'T'
-              mushroom_count += 1 if spot == 'M'
-
-            end
-          end
-
-          next if tomato_count < info.min_ingredients || mushroom_count < info.min_ingredients
-          piece_found = true
-          results << Node.new(piece.merge({placement: {x: position_x, y: postion_y}}), nil, current_map)
-
-          position_y += 1
+      temp_piece = []
+      (position_x..(piece[:x] - 1)).each do |x_cordinate|
+        (position_y..(piece[:y] - 1)).each do |y_cordinate|
+          temp_piece << initial_map[y_cordinate][x_cordinate]
         end
-        position_x += 1
+      end
+      tomato = temp_piece.select{|spot| spot == "T"}.count >= info.min_ingredients
+      mushroom = temp_piece.select{|spot| spot == "M"}.count >= info.min_ingredients
+      if tomato && mushroom && temp_piece.count <= 6
+        decision = {piece: piece, placement: {x: position_x, y: position_y}}
+        results << self.new(decision, nil, initial_map, info)
       end
     end
+
+    return results
   end
 
   def explore
-    result = []
+    results = []
+
+    position_x = self.decision[:placement][:x] + self.decision[:piece][:x]
+    position_y = 0
+    self.info.pieces.each do |piece|
+      temp_piece = []
+      (position_x..(position_x + (piece[:x] - 1))).each do |x_cordinate|
+        (position_y..(position_y + (piece[:y] - 1))).each do |y_cordinate|
+          temp_piece << self.info.map[y_cordinate][x_cordinate]
+        end
+      end
+      tomato = temp_piece.select{|spot| spot == "T"}.count >= info.min_ingredients
+      mushroom = temp_piece.select{|spot| spot == "M"}.count >= info.min_ingredients
+      if tomato && mushroom && temp_piece.count <= 6
+        decision = {piece: piece, placement: {x: position_x, y: position_y}}
+        results << Node.new(decision, self, self.info.map, self.info)
+      end
+    end
 
     return results
   end
@@ -117,7 +118,7 @@ end
 info.size = info.rows * info.columns
 
 puts "#{info.min_ingredients} T & #{info.min_ingredients} M"
-puts "min_ingredients per ingredient = #{info.min_ingredients * 2}"
+puts "min_ingredients per slice = #{info.min_ingredients * 2}"
 
 puts "max_slice_size = #{info.max_slice_size}"
 
@@ -148,4 +149,11 @@ end
 open_set = {}
 closed_set = []
 
-
+results = Node.explore(info.pieces, info.map, info)
+puts results.map(&:decision)
+puts "##########################"
+puts results.first.explore.map(&:decision)
+puts "##########################"
+puts results.first.explore.map(&:decision)
+puts "##########################"
+puts results.first.explore.first.explore.map(&:decision)
