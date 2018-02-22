@@ -131,7 +131,7 @@ puts "max possible slices per lowest ingredient =  #{[info.tomato_count , info.m
 puts "Average segements per slice = #{info.size / ([info.tomato_count , info.mushroom_count].min.to_f / info.min_ingredients.to_f)}"
 
 def divisors_of(num)
-  (1..num).select{|n|num % n == 0}
+  (1..num)
 end
 
 divisors = divisors_of(info.max_slice_size)
@@ -146,13 +146,23 @@ divisors.each do |divisor_x|
   end
 end
 
+pp info.pieces
+
 open_set = {}
 closed_set = []
+highest_weight = 0
 
 results = Node.explore(info.pieces, info.map, info)
+results.each do |node|
+  open_set[node.weight] ||= []
+  open_set[node.weight] << node
+  highest_weight = node.weight if node.weight > highest_weight
+end
+
+puts "open set"
+pp open_set.keys
+puts
 puts results.map(&:decision)
-puts "##########################"
-puts results.first.explore.map(&:decision)
 puts "##########################"
 puts results.first.explore.map(&:decision)
 puts "##########################"
