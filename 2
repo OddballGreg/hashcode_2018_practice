@@ -24,17 +24,14 @@ class Node
     @own_score = decision[:piece][:x] * decision[:piece][:y] #number of segements in decision
     @score_total = (@parent.score_total rescue 0) + @own_score
     @slice_tally = (@parent.slice_tally rescue 0) + 1
-    @min_ingredient_tally = (@parent.min_ingredient_tally rescue 0) + min_ingredient_count
-    @weight = @score_total.to_f / min_ingredient_tally.to_f
+    @min_ingredient_tally = (@parent.score_total rescue 0) + min_ingredient_count
+    @weight = @score_total / min_ingredient_tally
     @map = map.map{|x| x.clone}
     @info = info
     if @score_total == info.size
       $found_solution = true
     end
-    puts ""
     puts self.weight
-    puts self.score_total
-    puts ""
   end
 
   def self.explore(pieces, initial_map, info)
@@ -60,9 +57,12 @@ class Node
       no_overlaping = x_count == 0
 
       if tomato_valid && mushroom_valid && temp_piece.count <= 6 && no_overlaping
+        puts "placement at x = #{position_x} and y = #{position_y}"
+        puts "Piece = " + piece.to_s
         current_map.each do |level|
           puts level.inspect
         end
+        puts ""
         decision = {piece: piece, placement: {x: position_x, y: position_y}}
         results << self.new(decision, nil, current_map, info, min_ingredient_count)
       end
@@ -222,13 +222,14 @@ while($found_solution == false) do
 
   while(current_set.empty?) do
     raise if highest_weight < 0
-    highest_weight = (highest_weight.to_f - 0.1).round(2)
+    highest_weight = highest_weight - 1
     current_set = open_set[highest_weight] || []
   end
 
   current_node = current_set.pop
+  puts current_node.min_ingredient_tally
   results = current_node.explore
-  count += 1
+  count +=1
   puts ""
   puts "--- Next Exploration ---"
   puts ""
